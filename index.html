@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JP Log</title>
+    <link rel="stylesheet" href="shadow-the-hedgehog.css">
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; min-width: 320px; }
+      button, input, select { font: inherit; }
+      button:disabled { cursor: not-allowed; opacity: .45; }
+      .app-shell { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        padding: 24px 18px;
+        border-right: 1px solid var(--sth-edge);
+        background: rgba(0, 0, 0, .82);
+      }
+      .brand { margin: 0 0 6px; font-size: 1.65rem; }
+      .sidebar-copy { margin: 0 0 24px; color: var(--sth-muted); font-size: .9rem; }
+      .section-label {
+        margin: 20px 0 9px;
+        color: var(--sth-muted);
+        font-family: var(--sth-font-display);
+        font-size: .7rem;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+      }
+      .category-list { display: grid; gap: 8px; }
+      .category {
+        width: 100%;
+        justify-content: space-between;
+        padding: .7rem .8rem;
+        text-align: left;
+      }
+      .category.active { border-color: #fff; box-shadow: 0 0 18px var(--sth-red-glow); }
+      .category-count { color: var(--sth-muted); font-family: var(--sth-font-body); font-style: normal; }
+      .main { min-width: 0; padding: 34px clamp(20px, 5vw, 72px); }
+      .content { width: min(100%, 960px); margin: 0 auto; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+      .topbar h1 { margin: 0; font-size: clamp(2rem, 5vw, 4rem); }
+      .view { display: none; }
+      .view.active { display: block; }
+      .panel {
+        padding: clamp(18px, 3vw, 30px);
+        border: 1px solid var(--sth-edge);
+        border-radius: 6px;
+        background: linear-gradient(135deg, rgba(139, 0, 0, .16), transparent 42%), rgba(0, 0, 0, .76);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, .35);
+      }
+      .panel-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+      .panel-heading h2 { margin: 0; }
+      .muted { color: var(--sth-muted); }
+      .entry-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .entry-form .chaos-input { width: 100%; max-width: none; }
+      .form-actions, .selection-actions, .entry-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .form-actions { grid-column: 1 / -1; margin-top: 4px; }
+      .compact-button { min-height: 2.3rem; padding: .65rem .85rem; font-size: .76rem; }
+      .stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+      .entries { display: grid; gap: 10px; }
+      .entry, .select-row {
+        padding: 15px;
+        border: 1px solid rgba(255, 0, 0, .2);
+        border-radius: 4px;
+        background: rgba(8, 8, 8, .86);
+      }
+      .entry-head { display: flex; justify-content: space-between; gap: 16px; }
+      .entry-term { font-size: 1.2rem; font-weight: 800; }
+      .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+      .entry-actions { margin-top: 12px; }
+      .empty-state { padding: 28px; border: 1px dashed var(--sth-edge); color: var(--sth-muted); text-align: center; }
+      .selection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+      .check-label { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+      .check-label input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--sth-red); }
+      .select-row strong { display: block; margin-bottom: 3px; color: #fff; }
+      .practice-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: none;
+        overflow: auto;
+        padding: 24px;
+        background: rgba(0, 0, 0, .94);
+      }
+      .practice-overlay.active { display: grid; place-items: center; }
+      .practice-wrap { width: min(100%, 720px); }
+      .practice-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+      .progress-track { flex: 1; height: 7px; background: #292222; overflow: hidden; }
+      .progress-fill { width: 0; height: 100%; background: var(--sth-red); box-shadow: 0 0 14px var(--sth-red-glow); transition: width .2s ease; }
+      .practice-card { min-height: 460px; text-align: center; }
+      .practice-prompt { margin: 52px 0 8px; font-size: clamp(2.6rem, 8vw, 5rem); }
+      .practice-reading { min-height: 1.5em; color: var(--sth-muted); }
+      .choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 34px; }
+      .choice { min-height: 100px; white-space: normal; }
+      .choice.correct { border-color: #55d67a; box-shadow: 0 0 18px rgba(85, 214, 122, .45); }
+      .choice.wrong { border-color: #fff; background: #700; }
+      .practice-feedback { min-height: 1.5em; margin-top: 18px; font-weight: 800; }
+      @media (max-width: 760px) {
+        .app-shell { grid-template-columns: 1fr; }
+        .sidebar { border-right: 0; border-bottom: 1px solid var(--sth-edge); }
+        .category-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .main { padding: 24px 14px; }
+        .entry-form, .choice-grid { grid-template-columns: 1fr; }
+        .practice-card { min-height: 0; }
+      }
+    </style>
+  </head>
+  <body class="shadow-the-hedgehog-css dark-ark-gradient">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <h2 class="brand ultimate-lifeform-text">JP Log</h2>
+        <p class="sidebar-copy">Choose a saved list to select words and practice.</p>
+        <div class="section-label">Practice Lists</div>
+        <nav id="categories" class="category-list" aria-label="Practice lists"></nav>
+        <div class="section-label">Logger</div>
+        <button id="showLoggerBtn" class="ultimate-button category" type="button">
+          <span>Manage entries</span>
+        </button>
+      </aside>
+
+      <main class="main">
+        <div class="content">
+          <header class="topbar">
+            <h1 class="ultimate-lifeform-text">Japanese Progress</h1>
+          </header>
+
+          <section id="loggerView" class="view active">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Progress Logger</h2>
+                  <div class="muted">Save a type such as <strong>i-adj</strong> in Kind, or use tags to make custom practice lists.</div>
+                </div>
+              </div>
+              <div class="entry-form">
+                <label>
+                  <span class="section-label" style="display:block;margin:0 0 7px">Kind / Practice List</span>
+                  <input id="kind" class="chaos-input" list="kindSuggestions" placeholder="Choose or type: i-adj, verb, noun...">
+                  <small class="muted">Words with the same Kind appear together in the sidebar.</small>
+                </label>
+                <datalist id="kindSuggestions">
+                  <option value="i-adj"><option value="na-adj"><option value="verb"><option value="noun">
+                  <option value="adverb"><option value="grammar"><option value="vocab"><option value="word">
+                </datalist>
+                <input id="term" class="chaos-input" placeholder="Japanese term">
+                <input id="reading" class="chaos-input" placeholder="Reading">
+                <input id="meaning" class="chaos-input" placeholder="English meaning">
+                <input id="tags" class="chaos-input" placeholder="Tags (comma separated)">
+                <input id="notes" class="chaos-input" placeholder="Notes or example sentence">
+                <div class="form-actions">
+                  <button id="addBtn" class="ultimate-button compact-button" type="button">Add</button>
+                  <button id="cancelEditBtn" class="ultimate-button compact-button" type="button" hidden>Cancel edit</button>
+                  <button id="exportBtn" class="ultimate-button compact-button" type="button">Export CSV</button>
+                  <button id="exportDbBtn" class="ultimate-button compact-button" type="button">Export DB</button>
+                  <label class="ultimate-button compact-button">Import CSV<input id="importFile" type="file" accept=".csv" hidden></label>
+                  <label class="ultimate-button compact-button">Import DB<input id="importDbFile" type="file" accept=".db" hidden></label>
+                  <button id="clearBtn" class="ultimate-button compact-button" type="button">Clear all</button>
+                </div>
+              </div>
+              <div class="stats">
+                <div class="shadow-stat"><div class="shadow-stat-label">Total</div><div id="total" class="shadow-stat-value">0</div></div>
+                <div class="shadow-stat"><div class="shadow-stat-label">Lists</div><div id="listCount" class="shadow-stat-value">0</div></div>
+              </div>
+              <input id="search" class="chaos-input" placeholder="Search saved entries">
+              <div id="entries" class="entries"></div>
+            </div>
+          </section>
+
+          <section id="selectionView" class="view">
+            <div class="panel">
+              <div class="panel-heading">
+                <div>
+                  <div class="section-label">Practice List</div>
+                  <h2 id="selectionTitle">Choose words</h2>
+                  <div id="selectionSummary" class="muted"></div>
+                </div>
+              </div>
+              <div class="selection-toolbar">
+                <label class="check-label"><input id="selectAll" type="checkbox"><span>Select all</span></label>
+                <div class="selection-actions">
+                  <button id="startPracticeBtn" class="ultimate-button" type="button">Start practice</button>
+                </div>
+              </div>
+              <div id="selectionList" class="entries"></div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <section id="practiceArea" class="practice-overlay" aria-hidden="true">
+      <div class="practice-wrap">
+        <div class="practice-header">
+          <div class="progress-track"><div id="practiceProgress" class="progress-fill"></div></div>
+          <span id="practiceScore" class="muted">0 answered</span>
+          <button id="endPracticeBtn" class="ultimate-button compact-button" type="button">End</button>
+        </div>
+        <div id="practiceCard" class="practice-card panel"></div>
+      </div>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
+</html>

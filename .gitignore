@@ -1,0 +1,14 @@
+.venv/
+venv/
+node_modules/
+.env
+.env.*
+.vscode/
+.idea/
+jplog_py.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.log
+__pycache__/
+*.pyc
