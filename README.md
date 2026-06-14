@@ -46,7 +46,7 @@ restoring the local SQLite database. CSV import and export are also included.
 
 1. Add an entry.
 2. Enter a category in **Kind / Practice List**, such as `i-adj`, `na-adj`,
-   `verb`, or `noun`.
+   `verb`, `noun`, or `adverb`.
 3. Open that list from the sidebar.
 4. Select individual entries or choose **Select all**.
 5. Press **Start practice**.
