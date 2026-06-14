@@ -2,6 +2,7 @@
 
 I made this for myself to keep track of my Japanese progress. It is made to be
 self-hosted and stores study data in a local SQLite database.
+<img width="1883" height="935" alt="image" src="https://github.com/user-attachments/assets/386824a5-26f6-4637-b158-6d838a386f02" />
 
 ## Features
 
