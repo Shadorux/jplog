@@ -7,7 +7,8 @@ self-hosted and stores study data in a local SQLite database.
 ## Features
 
 - Save Japanese words, readings, meanings, notes, and tags.
-- Group words into practice lists such as `i-adj`, `verb`, and `noun`.
+- Group entries by word type, such as `i-adj`, `verb`, `noun`, or
+  `expression`.
 - Practice selected words or an entire list with multiple-choice questions.
 - Search, edit, and delete saved entries.
 - Import and export CSV files.
@@ -45,8 +46,8 @@ restoring the local SQLite database. CSV import and export are also included.
 ## Practice Mode
 
 1. Add an entry.
-2. Enter a category in **Kind / Practice List**, such as `i-adj`, `na-adj`,
-   `verb`, `noun`, or `adverb`.
+2. Choose its **Word Type**, such as `i-adj`, `na-adj`, `verb`, `noun`,
+   `adverb`, or `expression`.
 3. Open that list from the sidebar.
 4. Select individual entries or choose **Select all**.
 5. Press **Start practice**.

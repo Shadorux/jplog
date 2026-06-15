@@ -109,7 +109,7 @@
     <div class="app-shell">
       <aside class="sidebar">
         <h2 class="brand ultimate-lifeform-text">JP Log</h2>
-        <p class="sidebar-copy">Choose a saved list to select words and practice.</p>
+        <p class="sidebar-copy">Choose a saved list to select entries and practice.</p>
         <div class="section-label">Practice Lists</div>
         <nav id="categories" class="category-list" aria-label="Practice lists"></nav>
         <div class="section-label">Logger</div>
@@ -129,19 +129,27 @@
               <div class="panel-heading">
                 <div>
                   <h2>Progress Logger</h2>
-                  <div class="muted">Save a type such as <strong>i-adj</strong> in Kind, or use tags to make custom practice lists.</div>
+                  <div class="muted">Choose the word's grammar type. Use tags for custom practice lists such as <strong>N5</strong> or <strong>food</strong>.</div>
                 </div>
               </div>
               <div class="entry-form">
                 <label>
-                  <span class="section-label" style="display:block;margin:0 0 7px">Kind / Practice List</span>
-                  <input id="kind" class="chaos-input" list="kindSuggestions" placeholder="Choose or type: i-adj, verb, noun, adverb...">
-                  <small class="muted">Words with the same Kind appear together in the sidebar.</small>
+                  <span class="section-label" style="display:block;margin:0 0 7px">Word Type</span>
+                  <select id="kind" class="chaos-input" required>
+                    <option value="" selected disabled>Choose a word type...</option>
+                    <option value="noun">Noun</option>
+                    <option value="pronoun">Pronoun</option>
+                    <option value="i-adj">I-adjective</option>
+                    <option value="na-adj">Na-adjective</option>
+                    <option value="verb">Verb</option>
+                    <option value="adverb">Adverb</option>
+                    <option value="expression">Expression / greeting</option>
+                    <option value="grammar">Grammar pattern</option>
+                    <option value="counter">Counter</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <small class="muted">For example: 嬉しい is an i-adjective; 朝 is a noun.</small>
                 </label>
-                <datalist id="kindSuggestions">
-                  <option value="i-adj"><option value="na-adj"><option value="verb"><option value="noun">
-                  <option value="adverb"><option value="grammar"><option value="vocab"><option value="word">
-                </datalist>
                 <input id="term" class="chaos-input" placeholder="Japanese term">
                 <input id="reading" class="chaos-input" placeholder="Reading">
                 <input id="meaning" class="chaos-input" placeholder="English meaning">
@@ -171,7 +179,7 @@
               <div class="panel-heading">
                 <div>
                   <div class="section-label">Practice List</div>
-                  <h2 id="selectionTitle">Choose words</h2>
+                  <h2 id="selectionTitle">Choose entries</h2>
                   <div id="selectionSummary" class="muted"></div>
                 </div>
               </div>

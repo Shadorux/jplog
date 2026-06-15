@@ -32,10 +32,12 @@ function escapeHtml(value) {
 }
 
 function normalizeItem(item) {
+  const legacyKinds = new Set(['word', 'vocab'])
+  const kind = String(item.kind || '').trim()
   return {
     ...item,
     tags: Array.isArray(item.tags) ? item.tags : [],
-    kind: String(item.kind || 'Uncategorized').trim() || 'Uncategorized'
+    kind: !kind || legacyKinds.has(kind.toLowerCase()) ? 'Uncategorized' : kind
   }
 }
 
@@ -100,7 +102,7 @@ function renderSidebar() {
   const categories = getCategories()
   container.innerHTML = ''
 
-  const allButton = categoryButton('All words', state.items)
+  const allButton = categoryButton('All entries', state.items)
   container.appendChild(allButton)
   categories.forEach(category => container.appendChild(categoryButton(category.name, category.items)))
 }
@@ -173,7 +175,7 @@ function renderEntries() {
   const container = el('entries')
   container.innerHTML = ''
   if (!items.length) {
-    container.innerHTML = `<div class="empty-state">${state.items.length ? 'No entries match your search.' : 'No entries yet. Add your first Japanese word above.'}</div>`
+    container.innerHTML = `<div class="empty-state">${state.items.length ? 'No entries match your search.' : 'No entries yet. Add your first Japanese entry above.'}</div>`
     return
   }
 
@@ -207,7 +209,7 @@ function updateStats() {
 
 function formPayload() {
   return {
-    kind: el('kind').value.trim() || 'Uncategorized',
+    kind: el('kind').value,
     term: el('term').value.trim(),
     reading: el('reading').value.trim(),
     meaning: el('meaning').value.trim(),
@@ -218,6 +220,11 @@ function formPayload() {
 
 async function submitEntry() {
   const payload = formPayload()
+  if (!payload.kind) {
+    alert('Please choose a Word Type.')
+    el('kind').focus()
+    return
+  }
   if (!payload.term) {
     alert('Please add a Japanese term.')
     return
@@ -322,7 +329,7 @@ function selectedPracticeItems() {
 function beginPractice() {
   const selected = selectedPracticeItems()
   if (!selected.length) {
-    alert('Select at least one word, or use Select all.')
+    alert('Select at least one entry, or use Select all.')
     return
   }
 
@@ -442,7 +449,7 @@ async function importCsv(file) {
       tags = String(record.tags || '').split(',').map(tag => tag.trim()).filter(Boolean)
     }
     return normalizeItem({
-      kind: record.kind || 'Uncategorized',
+      kind: record.kind || 'other',
       term: record.term,
       reading: record.reading,
       meaning: record.meaning,
