@@ -66,6 +66,9 @@
       }
       .entry-head { display: flex; justify-content: space-between; gap: 16px; }
       .entry-term { font-size: 1.2rem; font-weight: 800; }
+      .answer-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 9px; color: var(--sth-muted); font-size: .88rem; }
+      .answer-correct { color: #75e293; }
+      .answer-incorrect { color: #ff7777; }
       .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
       .entry-actions { margin-top: 12px; }
       .empty-state { padding: 28px; border: 1px dashed var(--sth-edge); color: var(--sth-muted); text-align: center; }
@@ -129,14 +132,14 @@
               <div class="panel-heading">
                 <div>
                   <h2>Progress Logger</h2>
-                  <div class="muted">Choose the word's grammar type. Use tags for custom practice lists such as <strong>N5</strong> or <strong>food</strong>.</div>
+                  <div class="muted">Word Type is optional when you use tags. Tags make custom practice lists such as <strong>N5</strong> or <strong>food</strong>.</div>
                 </div>
               </div>
               <div class="entry-form">
                 <label>
-                  <span class="section-label" style="display:block;margin:0 0 7px">Word Type</span>
-                  <select id="kind" class="chaos-input" required>
-                    <option value="" selected disabled>Choose a word type...</option>
+                  <span class="section-label" style="display:block;margin:0 0 7px">Word Type (Optional)</span>
+                  <select id="kind" class="chaos-input">
+                    <option value="" selected>No word type - use tags only</option>
                     <option value="noun">Noun</option>
                     <option value="pronoun">Pronoun</option>
                     <option value="i-adj">I-adjective</option>
@@ -148,7 +151,7 @@
                     <option value="counter">Counter</option>
                     <option value="other">Other</option>
                   </select>
-                  <small class="muted">For example: 嬉しい is an i-adjective; 朝 is a noun.</small>
+                  <small class="muted">For example: 嬉しい is an i-adjective. A food list can use only the food tag.</small>
                 </label>
                 <input id="term" class="chaos-input" placeholder="Japanese term">
                 <input id="reading" class="chaos-input" placeholder="Reading">
@@ -168,6 +171,9 @@
               <div class="stats">
                 <div class="shadow-stat"><div class="shadow-stat-label">Total</div><div id="total" class="shadow-stat-value">0</div></div>
                 <div class="shadow-stat"><div class="shadow-stat-label">Lists</div><div id="listCount" class="shadow-stat-value">0</div></div>
+                <div class="shadow-stat"><div class="shadow-stat-label">Correct</div><div id="totalCorrect" class="shadow-stat-value">0</div></div>
+                <div class="shadow-stat"><div class="shadow-stat-label">Incorrect</div><div id="totalIncorrect" class="shadow-stat-value">0</div></div>
+                <div class="shadow-stat"><div class="shadow-stat-label">Accuracy</div><div id="totalAccuracy" class="shadow-stat-value">--</div></div>
               </div>
               <input id="search" class="chaos-input" placeholder="Search saved entries">
               <div id="entries" class="entries"></div>

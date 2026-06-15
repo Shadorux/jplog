@@ -37,8 +37,20 @@ function normalizeItem(item) {
   return {
     ...item,
     tags: Array.isArray(item.tags) ? item.tags : [],
-    kind: !kind || legacyKinds.has(kind.toLowerCase()) ? 'Uncategorized' : kind
+    kind: legacyKinds.has(kind.toLowerCase()) ? 'Uncategorized' : kind,
+    correct_count: Number(item.correct_count) || 0,
+    incorrect_count: Number(item.incorrect_count) || 0
   }
+}
+
+function answerStatsHtml(item) {
+  const correct = item.correct_count || 0
+  const incorrect = item.incorrect_count || 0
+  const total = correct + incorrect
+  const accuracy = total ? `${Math.round(correct / total * 100)}%` : '--'
+  return `<span class="answer-correct">Correct: ${correct}</span>
+    <span class="answer-incorrect">Incorrect: ${incorrect}</span>
+    <span>Accuracy: ${accuracy}</span>`
 }
 
 async function detectApi() {
@@ -157,6 +169,7 @@ function renderSelectionList() {
       <span>
         <strong>${escapeHtml(item.term)} ${item.reading ? `<span class="muted">(${escapeHtml(item.reading)})</span>` : ''}</strong>
         <span class="muted">${escapeHtml(item.meaning || 'No meaning saved')}</span>
+        <span class="answer-stats">${answerStatsHtml(item)}</span>
       </span>`
     container.appendChild(label)
   })
@@ -188,9 +201,10 @@ function renderEntries() {
           <div class="entry-term">${escapeHtml(item.term)} <span class="muted">${escapeHtml(item.reading || '')}</span></div>
           <div>${escapeHtml(item.meaning || '')}</div>
         </div>
-        <span class="chaos-badge">${escapeHtml(item.kind)}</span>
+        ${item.kind ? `<span class="chaos-badge">${escapeHtml(item.kind)}</span>` : ''}
       </div>
       ${item.notes ? `<div class="muted" style="margin-top:9px">${escapeHtml(item.notes)}</div>` : ''}
+      <div class="answer-stats">${answerStatsHtml(item)}</div>
       <div class="tags">${item.tags.map(tag => `<span class="chaos-badge">${escapeHtml(tag)}</span>`).join('')}</div>
       <div class="entry-actions">
         <button class="ultimate-button compact-button edit-btn" type="button">Edit</button>
@@ -203,8 +217,14 @@ function renderEntries() {
 }
 
 function updateStats() {
+  const correct = state.items.reduce((sum, item) => sum + item.correct_count, 0)
+  const incorrect = state.items.reduce((sum, item) => sum + item.incorrect_count, 0)
+  const answered = correct + incorrect
   el('total').textContent = state.items.length
   el('listCount').textContent = getCategories().length
+  el('totalCorrect').textContent = correct
+  el('totalIncorrect').textContent = incorrect
+  el('totalAccuracy').textContent = answered ? `${Math.round(correct / answered * 100)}%` : '--'
 }
 
 function formPayload() {
@@ -218,11 +238,41 @@ function formPayload() {
   }
 }
 
+function normalizedEntryText(value) {
+  return String(value || '').trim().toLocaleLowerCase()
+}
+
+function findDuplicateEntry(payload, excludeId = null) {
+  const term = normalizedEntryText(payload.term)
+  const reading = normalizedEntryText(payload.reading)
+  return state.items.find(item => (
+    itemId(item) !== String(excludeId || '')
+    && normalizedEntryText(item.term) === term
+    && normalizedEntryText(item.reading) === reading
+  ))
+}
+
+function confirmDuplicate(duplicate) {
+  const reading = duplicate.reading ? ` (${duplicate.reading})` : ''
+  const meaning = duplicate.meaning ? `\nMeaning: ${duplicate.meaning}` : ''
+  return confirm(
+    `"${duplicate.term}${reading}" is already saved.${meaning}\n\nAdd it again anyway?`
+  )
+}
+
+async function saveRemoteEntry(url, method, payload, allowDuplicate) {
+  return fetch(url, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ...payload, allow_duplicate: allowDuplicate })
+  })
+}
+
 async function submitEntry() {
   const payload = formPayload()
-  if (!payload.kind) {
-    alert('Please choose a Word Type.')
-    el('kind').focus()
+  if (!payload.kind && !payload.tags.length) {
+    alert('Please choose a Word Type or add at least one tag.')
+    el('tags').focus()
     return
   }
   if (!payload.term) {
@@ -230,13 +280,31 @@ async function submitEntry() {
     return
   }
 
+  const localDuplicate = findDuplicateEntry(payload, state.editingId)
+  let allowDuplicate = false
+  if (localDuplicate) {
+    allowDuplicate = confirmDuplicate(localDuplicate)
+    if (!allowDuplicate) return
+  }
+
   if (state.editingId) {
     if (state.api) {
-      const response = await fetch(`/api/entries/${state.editingId}`, {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+      let response = await saveRemoteEntry(
+        `/api/entries/${state.editingId}`,
+        'PUT',
+        payload,
+        allowDuplicate
+      )
+      if (response.status === 409) {
+        const result = await response.json()
+        if (!confirmDuplicate(result.duplicate)) return
+        response = await saveRemoteEntry(
+          `/api/entries/${state.editingId}`,
+          'PUT',
+          payload,
+          true
+        )
+      }
       if (!response.ok) return alert('Failed to save the entry.')
     } else {
       const index = state.items.findIndex(item => itemId(item) === state.editingId)
@@ -247,11 +315,12 @@ async function submitEntry() {
   } else {
     const entry = { ...payload, created: Date.now() }
     if (state.api) {
-      const response = await fetch('/api/entries', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(entry)
-      })
+      let response = await saveRemoteEntry('/api/entries', 'POST', entry, allowDuplicate)
+      if (response.status === 409) {
+        const result = await response.json()
+        if (!confirmDuplicate(result.duplicate)) return
+        response = await saveRemoteEntry('/api/entries', 'POST', entry, true)
+      }
       if (!response.ok) return alert('Failed to add the entry.')
     } else {
       state.items.push(entry)
@@ -378,6 +447,34 @@ function renderQuestion() {
   })
 }
 
+async function recordPracticeAnswer(item, wasCorrect) {
+  const itemKey = itemId(item)
+  const field = wasCorrect ? 'correct_count' : 'incorrect_count'
+  item[field] += 1
+
+  const storedItem = state.items.find(entry => itemId(entry) === itemKey)
+  if (storedItem && storedItem !== item) storedItem[field] += 1
+
+  if (state.api) {
+    try {
+      const response = await fetch(`/api/entries/${item.id}/answer`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ correct: wasCorrect })
+      })
+      if (!response.ok) throw new Error('Failed to save answer')
+    } catch (error) {
+      item[field] -= 1
+      if (storedItem && storedItem !== item) storedItem[field] -= 1
+      updateStats()
+      console.error(error)
+    }
+  } else {
+    saveLocal(state.items)
+  }
+  updateStats()
+}
+
 function answerQuestion(button) {
   if (state.locked) return
   state.locked = true
@@ -386,6 +483,7 @@ function answerQuestion(button) {
   const wasCorrect = chosen === correct
   state.answered += 1
   if (wasCorrect) state.correct += 1
+  recordPracticeAnswer(state.current, wasCorrect)
 
   el('practiceCard').querySelectorAll('.choice').forEach(choice => {
     choice.disabled = true
@@ -404,6 +502,7 @@ function endPractice() {
   state.practiceItems = []
   state.practiceQueue = []
   state.current = null
+  renderSelectionList()
   showView('selectionView')
 }
 
@@ -412,7 +511,10 @@ async function exportCsv() {
     window.location.assign('/api/export')
     return
   }
-  const headers = ['kind', 'term', 'reading', 'meaning', 'tags', 'notes', 'created']
+  const headers = [
+    'kind', 'term', 'reading', 'meaning', 'tags', 'notes', 'created',
+    'correct_count', 'incorrect_count'
+  ]
   const quote = value => `"${String(value ?? '').replace(/"/g, '""')}"`
   const rows = state.items.map(item => headers.map(key => quote(key === 'tags' ? JSON.stringify(item.tags) : item[key])).join(','))
   downloadBlob([headers.join(','), ...rows].join('\n'), 'jplog-export.csv', 'text/csv')
@@ -449,13 +551,15 @@ async function importCsv(file) {
       tags = String(record.tags || '').split(',').map(tag => tag.trim()).filter(Boolean)
     }
     return normalizeItem({
-      kind: record.kind || 'other',
+      kind: record.kind || '',
       term: record.term,
       reading: record.reading,
       meaning: record.meaning,
       tags,
       notes: record.notes,
-      created: Number(record.created) || Date.now()
+      created: Number(record.created) || Date.now(),
+      correct_count: Number(record.correct_count) || 0,
+      incorrect_count: Number(record.incorrect_count) || 0
     })
   })
   state.items.push(...imported)
